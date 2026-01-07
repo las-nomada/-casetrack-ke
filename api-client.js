@@ -78,6 +78,10 @@ const APIClient = {
     },
 
     // Users
+    async getPublicUsers() {
+        return this.request('/auth/users');
+    },
+
     async getUsers() {
         return this.request('/users');
     },

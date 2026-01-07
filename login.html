@@ -168,7 +168,12 @@
 <body>
     <div class="login-card">
         <div class="logo-section">
-            <h1>CaseTrack <span>KE</span></h1>
+            <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 15px;">
+                <h1>CaseTrack <span>KE</span></h1>
+                <span
+                    style="background: rgba(197, 160, 89, 0.15); color: var(--primary); padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase;">2FA
+                    Protected</span>
+            </div>
             <p>Law Firm Management System</p>
         </div>
 
@@ -179,11 +184,7 @@
                 <div class="form-group">
                     <label for="userId">Select Identity</label>
                     <select id="userId" required>
-                        <option value="" disabled selected>Choose your profile...</option>
-                        <option value="USR-001">James Odhiambo (Partner)</option>
-                        <option value="USR-002">Sarah Otieno (Senior Associate)</option>
-                        <option value="USR-003">Peter Mwangi (Associate)</option>
-                        <option value="USR-004">Mary Wanjiru (Registry Clerk)</option>
+                        <option value="" disabled selected>Loading users...</option>
                     </select>
                 </div>
 
@@ -195,7 +196,12 @@
 
             <div id="loginStep2FA" style="display: none;">
                 <div class="form-group">
-                    <label for="twoFactorCode">Authenticator Code</label>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label for="twoFactorCode" style="margin-bottom: 0;">Authenticator Code</label>
+                        <a href="#" id="backToLogin"
+                            style="color: var(--primary); font-size: 11px; text-decoration: none;">← Change User</a>
+                    </div>
                     <input type="text" id="twoFactorCode" placeholder="000000" maxlength="6" inputmode="numeric">
                     <p style="font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 8px;">Enter the 6-digit code
                         from your Google Authenticator app.</p>
@@ -212,6 +218,35 @@
 
     <script>
         let currentTempToken = null;
+
+        // Load users on startup
+        async function loadUsers() {
+            const userIdSelect = document.getElementById('userId');
+            try {
+                const response = await fetch('/api/auth/users');
+                const users = await response.json();
+
+                userIdSelect.innerHTML = '<option value="" disabled selected>Choose your profile...</option>';
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.userId;
+                    option.textContent = `${user.name} (${user.role})`;
+                    userIdSelect.appendChild(option);
+                });
+            } catch (err) {
+                userIdSelect.innerHTML = '<option value="" disabled>Error loading users</option>';
+            }
+        }
+        loadUsers();
+
+        document.getElementById('backToLogin').addEventListener('click', (e) => {
+            e.preventDefault();
+            currentTempToken = null;
+            document.getElementById('loginStep1-2').style.display = 'block';
+            document.getElementById('loginStep2FA').style.display = 'none';
+            document.getElementById('twoFactorCode').required = false;
+            document.getElementById('loginBtn').textContent = 'Authorize Access';
+        });
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();

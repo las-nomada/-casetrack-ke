@@ -30,6 +30,15 @@ const path = require('path');
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '..', 'login.html')));
 app.get('/login-bg.png', (req, res) => res.sendFile(path.join(__dirname, '..', 'login-bg.png')));
 
+// Public endpoint for login dropdown
+app.get('/api/auth/users', (req, res) => {
+    db.all("SELECT userId, name, role FROM users WHERE active = 1", [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+
 // Protect the main app route
 app.get('/', (req, res) => {
     const token = req.cookies.token;
@@ -129,8 +138,10 @@ app.post('/api/auth/login', (req, res) => {
         // Check password
         const passwordMatch = bcrypt.compareSync(password, user.passwordHash);
         if (!passwordMatch) {
+            console.warn(`Login failed: Incorrect password for user ${userId}`);
             return res.status(401).json({ error: 'Incorrect password' });
         }
+
 
         // If 2FA is enabled, return a pending state
         if (user.twoFactorEnabled) {
@@ -273,11 +284,27 @@ app.post('/api/auth/2fa/verify', (req, res) => {
 
 // Users
 app.get('/api/users', (req, res) => {
-    db.all("SELECT * FROM users", [], (err, rows) => {
+    db.all("SELECT userId, name, role, email, department, active FROM users", [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
 });
+
+app.post('/api/users', (req, res) => {
+    const { userId, name, role, email, department, password } = req.body;
+    const id = userId || `USR-${Math.floor(100 + Math.random() * 899)}`;
+    const hash = password ? bcrypt.hashSync(password, 10) : '$2b$10$paGJDHcdd6n9Lz6QnMnlmeCTFxhz0nKQL/yjr/hfi/HryruKBxe3W';
+
+    db.run(
+        "INSERT INTO users (userId, name, role, email, department, passwordHash, active) VALUES (?, ?, ?, ?, ?, ?, 1)",
+        [id, name, role, email, department, hash],
+        function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.status(201).json({ success: true, userId: id });
+        }
+    );
+});
+
 
 // Files
 app.get('/api/files', (req, res) => {

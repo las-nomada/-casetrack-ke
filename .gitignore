@@ -1,8 +1,10 @@
 # Dependencies
 node_modules/
+server/node_modules/
 
 # Database (will be created fresh on deploy)
 *.db
+server/*.db
 
 # OS files
 .DS_Store

@@ -144,6 +144,13 @@ class CaseTrackKE {
         document.getElementById('cancelDeadline')?.addEventListener('click', () => this.closeModal('deadlineModal'));
         document.getElementById('deadlineForm')?.addEventListener('submit', (e) => this.handleDeadlineSubmit(e));
 
+        // Login flow
+        document.getElementById('loginForm')?.addEventListener('submit', (e) => this.handleLoginSubmit(e));
+        document.getElementById('backToUsers')?.addEventListener('click', () => {
+            document.getElementById('loginStep2').style.display = 'none';
+            document.getElementById('loginStep1').style.display = 'block';
+        });
+
         // File details
         document.getElementById('closeFileDetails')?.addEventListener('click', () => this.closeModal('fileDetailsModal'));
 
@@ -200,6 +207,10 @@ class CaseTrackKE {
         const userList = document.getElementById('userList');
         const users = CaseTrackDB.getAllUsers();
 
+        // Reset to step 1
+        document.getElementById('loginStep1').style.display = 'block';
+        document.getElementById('loginStep2').style.display = 'none';
+
         userList.innerHTML = users.map(user => {
             const roleInfo = CaseTrackAuth.getRoleInfo(user.role);
             return `
@@ -217,18 +228,63 @@ class CaseTrackKE {
         userList.querySelectorAll('.user-option').forEach(option => {
             option.addEventListener('click', () => {
                 const userId = option.dataset.userId;
-                this.loginAs(userId);
+                this.showPasswordStep(userId);
             });
         });
     }
 
-    async loginAs(userId) {
-        const result = CaseTrackAuth.login(userId);
-        if (result.success) {
-            this.hideLoginModal();
-            await this.setupUI();
-        } else {
-            alert('Login failed');
+    showPasswordStep(userId) {
+        const user = CaseTrackDB.getUser(userId);
+        if (!user) return;
+
+        this.pendingLoginUserId = userId;
+
+        const preview = document.getElementById('selectedUserPreview');
+        const roleInfo = CaseTrackAuth.getRoleInfo(user.role);
+
+        preview.innerHTML = `
+            <div class="user-option selected">
+                <span class="user-option-icon">${roleInfo?.icon || '👤'}</span>
+                <div class="user-option-info">
+                    <div class="user-option-name">${user.name}</div>
+                    <div class="user-option-role">${user.role} — ${user.department}</div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('loginStep1').style.display = 'none';
+        document.getElementById('loginStep2').style.display = 'block';
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('loginPassword').focus();
+    }
+
+    async handleLoginSubmit(e) {
+        e.preventDefault();
+        const password = document.getElementById('loginPassword').value;
+        const userId = this.pendingLoginUserId;
+
+        if (!userId || !password) return;
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Authenticating...';
+
+        try {
+            const result = await CaseTrackAuth.login(userId, password);
+            if (result.success) {
+                this.hideLoginModal();
+                await this.setupUI();
+                this.showNotification('Authentication successful. Welcome back!', 'success');
+            } else {
+                this.showNotification(result.error || 'Invalid password. Access denied.', 'danger');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        } catch (err) {
+            this.showNotification('Connection error while authenticating.', 'danger');
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
         }
     }
 

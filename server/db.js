@@ -23,8 +23,18 @@ function createTables() {
             role TEXT NOT NULL,
             email TEXT,
             department TEXT,
+            passwordHash TEXT,
             active INTEGER DEFAULT 1
-        )`);
+        )`, (err) => {
+            if (!err) {
+                // Try to add column if it doesn't exist (for migration)
+                db.run(`ALTER TABLE users ADD COLUMN passwordHash TEXT`, (alterErr) => {
+                    if (alterErr) {
+                        // Probably already exists, ignore
+                    }
+                });
+            }
+        });
 
         // Files Table
         db.run(`CREATE TABLE IF NOT EXISTS files (
@@ -106,14 +116,16 @@ function seedInitialData() {
     db.get("SELECT COUNT(*) as count FROM users", (err, row) => {
         if (row.count === 0) {
             console.log('Seeding initial data...');
+            const defaultHash = '$2b$10$LQbKXMmacHFJwRmoNJaOTepum5ck.EHmbtY2TZA/Wb6COfmCfxr3u'; // Hash for 'LawFirm2026'
+
             const users = [
-                ['USR-001', 'James Odhiambo', 'Partner', 'james@casetrack.ke', 'Corporate', 1],
-                ['USR-002', 'Sarah Otieno', 'Advocate', 'sarah@casetrack.ke', 'Litigation', 1],
-                ['USR-003', 'Peter Mwangi', 'Advocate', 'peter@casetrack.ke', 'Criminal', 1],
-                ['USR-004', 'Mary Wanjiru', 'Clerk', 'mary@casetrack.ke', 'Registry', 1]
+                ['USR-001', 'James Odhiambo', 'Partner', 'james@casetrack.ke', 'Corporate', defaultHash, 1],
+                ['USR-002', 'Sarah Otieno', 'Advocate', 'sarah@casetrack.ke', 'Litigation', defaultHash, 1],
+                ['USR-003', 'Peter Mwangi', 'Advocate', 'peter@casetrack.ke', 'Criminal', defaultHash, 1],
+                ['USR-004', 'Mary Wanjiru', 'Clerk', 'mary@casetrack.ke', 'Registry', defaultHash, 1]
             ];
 
-            const stmt = db.prepare("INSERT INTO users (userId, name, role, email, department, active) VALUES (?, ?, ?, ?, ?, ?)");
+            const stmt = db.prepare("INSERT INTO users (userId, name, role, email, department, passwordHash, active) VALUES (?, ?, ?, ?, ?, ?, ?)");
             users.forEach(u => stmt.run(u));
             stmt.finalize();
 

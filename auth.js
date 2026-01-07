@@ -65,21 +65,23 @@ const CaseTrackAuth = {
     },
 
     /**
-     * Login user by selecting from user list (simplified for demo)
+     * Login user with password via API
      */
-    login(userId) {
-        const user = CaseTrackDB.getUser(userId);
-        if (!user || !user.active) {
-            return { success: false, error: 'User not found or inactive' };
+    async login(userId, password) {
+        try {
+            const result = await APIClient.login(userId, password);
+            if (result && result.success) {
+                this.currentUser = result.user;
+                this.saveSession({
+                    userId: result.user.userId,
+                    loginTime: new Date().toISOString()
+                });
+                return { success: true, user: result.user };
+            }
+            return { success: false, error: 'Login failed' };
+        } catch (error) {
+            return { success: false, error: error.message };
         }
-
-        this.currentUser = user;
-        this.saveSession({
-            userId: user.userId,
-            loginTime: new Date().toISOString()
-        });
-
-        return { success: true, user };
     },
 
     /**
@@ -87,6 +89,9 @@ const CaseTrackAuth = {
      */
     logout() {
         this.currentUser = null;
+        if (typeof APIClient !== 'undefined') {
+            APIClient.setToken(null);
+        }
         localStorage.removeItem(this.STORAGE_KEY);
         return true;
     },

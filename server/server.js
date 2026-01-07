@@ -4,7 +4,11 @@ const WebSocket = require('ws');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const db = require('./db');
-const { v4: uuidv4 } = require('uuid'); // Add if needed, or use custom ID gen
+const { v4: uuidv4 } = require('uuid');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'casetrack-ke-secure-secret-2026';
 
 const app = express();
 const server = http.createServer(app);
@@ -59,7 +63,68 @@ function broadcast(data) {
     });
 }
 
+// --- Authentication Middleware ---
+const authenticateToken = (req, res, next) => {
+    // Skip auth for login route
+    if (req.path === '/api/auth/login') return next();
+
+    // Only protect /api routes
+    if (!req.path.startsWith('/api/')) return next();
+
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) return res.status(401).json({ error: 'Access denied. Please log in.' });
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) return res.status(403).json({ error: 'Session expired or invalid. Please log in again.' });
+        req.user = user;
+        next();
+    });
+};
+
+app.use(authenticateToken);
+
 // --- API Routes ---
+
+// Auth Login
+app.post('/api/auth/login', (req, res) => {
+    const { userId, password } = req.body;
+
+    if (!userId || !password) {
+        return res.status(400).json({ error: 'User ID and password are required' });
+    }
+
+    db.get("SELECT * FROM users WHERE userId = ? AND active = 1", [userId], (err, user) => {
+        if (err) return res.status(500).json({ error: 'Internal server error' });
+        if (!user) return res.status(401).json({ error: 'User not found or inactive' });
+
+        // Check password
+        const passwordMatch = bcrypt.compareSync(password, user.passwordHash);
+        if (!passwordMatch) {
+            return res.status(401).json({ error: 'Incorrect password' });
+        }
+
+        // Generate token
+        const token = jwt.sign(
+            { userId: user.userId, role: user.role, name: user.name },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.json({
+            success: true,
+            token,
+            user: {
+                userId: user.userId,
+                name: user.name,
+                role: user.role,
+                email: user.email,
+                department: user.department
+            }
+        });
+    });
+});
 
 // Users
 app.get('/api/users', (req, res) => {

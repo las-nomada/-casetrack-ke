@@ -34,9 +34,25 @@
                 <p class="modal-subtitle">Law Firm File Tracking System</p>
             </div>
             <div class="modal-body">
-                <h3>Select User Profile</h3>
-                <div class="user-list" id="userList">
-                    <!-- Users loaded dynamically -->
+                <div id="loginStep1">
+                    <h3>Select User Profile</h3>
+                    <div class="user-list" id="userList">
+                        <!-- Users loaded dynamically -->
+                    </div>
+                </div>
+
+                <div id="loginStep2" style="display: none;">
+                    <button class="btn-text" id="backToUsers" style="margin-bottom: 1rem;">← Back to user
+                        selection</button>
+                    <div class="selected-user-preview" id="selectedUserPreview"></div>
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label for="loginPassword">Enter Password</label>
+                            <input type="password" id="loginPassword" placeholder="••••••••" required>
+                            <p class="form-hint">Default password is LawFirm2026</p>
+                        </div>
+                        <button type="submit" class="btn-primary full-width">Sign In</button>
+                    </form>
                 </div>
             </div>
         </div>

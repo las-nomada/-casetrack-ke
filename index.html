@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CaseTrack KE - Law Firm File Tracking &amp; Management System">
+    <title>CaseTrack KE — File Tracking System</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- QR Code Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+
+<body>
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-logo">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 12h6m-3-3v6m-7 4h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <h2>CaseTrack <span class="accent">KE</span></h2>
+                <p class="modal-subtitle">Law Firm File Tracking System</p>
+            </div>
+            <div class="modal-body">
+                <h3>Select User Profile</h3>
+                <div class="user-list" id="userList">
+                    <!-- Users loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12" />
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <line x1="3" y1="18" x2="21" y2="18" />
+                    </svg>
+                </button>
+                <div class="header-brand">
+                    <div class="logo">
+                        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 12h6m-3-3v6m-7 4h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div class="brand-text">
+                        <h1 class="brand-name">CaseTrack <span class="accent">KE</span></h1>
+                        <p class="brand-tagline">File Tracking System</p>
+                    </div>
+                </div>
+            </div>
+            <div class="header-meta">
+                <button class="notification-btn" id="notificationBtn" aria-label="Notifications">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
+                    </svg>
+                    <span class="notification-badge" id="notificationBadge">0</span>
+                </button>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5" />
+                        <line x1="12" y1="1" x2="12" y2="3" />
+                        <line x1="12" y1="21" x2="12" y2="23" />
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                        <line x1="1" y1="12" x2="3" y2="12" />
+                        <line x1="21" y1="12" x2="23" y2="12" />
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                    </svg>
+                </button>
+                <div class="user-menu" id="userMenu">
+                    <span class="user-role" id="userRole">Partner</span>
+                    <span class="user-name" id="userName">James Odhiambo</span>
+                    <button class="logout-btn" id="logoutBtn">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">Navigation</h3>
+                    <nav class="nav-menu">
+                        <button class="nav-btn active" data-view="dashboard">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                            Dashboard
+                        </button>
+                        <button class="nav-btn" data-view="files">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                            </svg>
+                            Files
+                        </button>
+                        <button class="nav-btn" data-view="movements">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="23,4 23,10 17,10" />
+                                <polyline points="1,20 1,14 7,14" />
+                                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+                            </svg>
+                            Movements
+                        </button>
+                        <button class="nav-btn" data-view="deadlines">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <polyline points="12,6 12,12 16,14" />
+                            </svg>
+                            Deadlines
+                        </button>
+                        <button class="nav-btn" data-view="reports" id="reportsBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <line x1="18" y1="20" x2="18" y2="10" />
+                                <line x1="12" y1="20" x2="12" y2="4" />
+                                <line x1="6" y1="20" x2="6" y2="14" />
+                            </svg>
+                            Reports
+                        </button>
+                    </nav>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">Quick Stats</h3>
+                    <div class="quick-stats" id="quickStats">
+                        <div class="stat-item">
+                            <span class="stat-value" id="statActiveFiles">0</span>
+                            <span class="stat-label">Active Files</span>
+                        </div>
+                        <div class="stat-item urgent">
+                            <span class="stat-value" id="statOverdue">0</span>
+                            <span class="stat-label">Overdue</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="statPending">0</span>
+                            <span class="stat-label">Pending Ack</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">Your Role</h3>
+                    <div class="role-info" id="roleInfo">
+                        <div class="role-badge">
+                            <span class="role-icon">👔</span>
+                            <span class="role-name">Partner</span>
+                        </div>
+                        <ul class="role-capabilities" id="roleCapabilities">
+                            <li>View all files</li>
+                            <li>Generate reports</li>
+                            <li>Access audit logs</li>
+                        </ul>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Dashboard View -->
+                <section class="view active" id="dashboardView">
+                    <div class="view-header">
+                        <div class="view-header-text">
+                            <h2>Dashboard</h2>
+                            <p class="view-subtitle">Overview of file tracking status</p>
+                        </div>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="stats-grid" id="dashboardStats">
+                        <div class="stat-card">
+                            <div class="stat-card-icon blue">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                                </svg>
+                            </div>
+                            <div class="stat-card-content">
+                                <span class="stat-card-value" id="totalFiles">0</span>
+                                <span class="stat-card-label">Total Files</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-icon green">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <polyline points="20,6 9,17 4,12" />
+                                </svg>
+                            </div>
+                            <div class="stat-card-content">
+                                <span class="stat-card-value" id="activeFilesCount">0</span>
+                                <span class="stat-card-label">Active Cases</span>
+                            </div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="stat-card-icon yellow">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <polyline points="12,6 12,12 16,14" />
+                                </svg>
+                            </div>
+                            <div class="stat-card-content">
+                                <span class="stat-card-value" id="upcomingDeadlinesCount">0</span>
+                                <span class="stat-card-label">Upcoming Deadlines</span>
+                            </div>
+                        </div>
+                        <div class="stat-card danger">
+                            <div class="stat-card-icon red">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path
+                                        d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                                    <line x1="12" y1="9" x2="12" y2="13" />
+                                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                                </svg>
+                            </div>
+                            <div class="stat-card-content">
+                                <span class="stat-card-value" id="overdueCount">0</span>
+                                <span class="stat-card-label">Overdue Items</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alerts Section -->
+                    <div class="dashboard-section">
+                        <div class="section-header">
+                            <h3>Active Alerts</h3>
+                            <button class="btn-text" id="viewAllAlerts">View All</button>
+                        </div>
+                        <div class="alerts-list" id="alertsList">
+                            <!-- Alerts loaded dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity & Upcoming Deadlines -->
+                    <div class="dashboard-grid">
+                        <div class="dashboard-section">
+                            <div class="section-header">
+                                <h3>Upcoming Deadlines</h3>
+                            </div>
+                            <div class="deadlines-list" id="upcomingDeadlinesList">
+                                <!-- Deadlines loaded dynamically -->
+                            </div>
+                        </div>
+                        <div class="dashboard-section">
+                            <div class="section-header">
+                                <h3>Files in My Custody</h3>
+                            </div>
+                            <div class="files-list" id="myCustodyList">
+                                <!-- Files loaded dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Files View -->
+                <section class="view" id="filesView">
+                    <div class="view-header">
+                        <h2>File Registry</h2>
+                        <div class="view-actions">
+                            <div class="search-box">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
+                                <input type="text" id="fileSearch" placeholder="Search files...">
+                            </div>
+                            <button class="btn-primary" id="newFileBtn">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                                New File
+                            </button>
+                        </div>
+                    </div>
+                    <div class="filter-bar">
+                        <select id="statusFilter">
+                            <option value="">All Statuses</option>
+                            <option value="Active">Active</option>
+                            <option value="Dormant">Dormant</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                        <select id="practiceAreaFilter">
+                            <option value="">All Practice Areas</option>
+                        </select>
+                    </div>
+                    <div class="files-table-container">
+                        <table class="data-table" id="filesTable">
+                            <thead>
+                                <tr>
+                                    <th>File ID</th>
+                                    <th>Case Name</th>
+                                    <th>Client</th>
+                                    <th>Practice Area</th>
+                                    <th>Status</th>
+                                    <th>Custodian</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="filesTableBody">
+                                <!-- Files loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Movements View -->
+                <section class="view" id="movementsView">
+                    <div class="view-header">
+                        <h2>File Movements</h2>
+                        <div class="view-actions">
+                            <button class="scan-btn" onclick="QRScanner.openScanner()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="3" y="3" width="7" height="7" />
+                                    <rect x="14" y="3" width="7" height="7" />
+                                    <rect x="14" y="14" width="7" height="7" />
+                                    <rect x="3" y="14" width="7" height="7" />
+                                </svg>
+                                Scan QR
+                            </button>
+                            <button class="btn-primary" id="newMovementBtn">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <polyline points="23,4 23,10 17,10" />
+                                    <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+                                </svg>
+                                Log Movement
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Pending Acknowledgments -->
+                    <div class="dashboard-section" id="pendingAckSection">
+                        <div class="section-header">
+                            <h3>Pending Acknowledgments</h3>
+                        </div>
+                        <div class="pending-list" id="pendingAckList">
+                            <!-- Pending acknowledgments loaded dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Recent Movements -->
+                    <div class="dashboard-section">
+                        <div class="section-header">
+                            <h3>Recent Movements</h3>
+                        </div>
+                        <div class="movements-timeline" id="movementsTimeline">
+                            <!-- Movements loaded dynamically -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Deadlines View -->
+                <section class="view" id="deadlinesView">
+                    <div class="view-header">
+                        <h2>Deadlines & Court Dates</h2>
+                        <div class="view-actions">
+                            <button class="btn-primary" id="newDeadlineBtn">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                </svg>
+                                Add Deadline
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Overdue -->
+                    <div class="dashboard-section danger-section" id="overdueSection">
+                        <div class="section-header">
+                            <h3>⚠️ Overdue</h3>
+                        </div>
+                        <div class="deadlines-cards" id="overdueList">
+                            <!-- Overdue deadlines -->
+                        </div>
+                    </div>
+
+                    <!-- This Week -->
+                    <div class="dashboard-section">
+                        <div class="section-header">
+                            <h3>This Week</h3>
+                        </div>
+                        <div class="deadlines-cards" id="thisWeekList">
+                            <!-- This week's deadlines -->
+                        </div>
+                    </div>
+
+                    <!-- Upcoming -->
+                    <div class="dashboard-section">
+                        <div class="section-header">
+                            <h3>Upcoming</h3>
+                        </div>
+                        <div class="deadlines-cards" id="upcomingList">
+                            <!-- Upcoming deadlines -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Reports View -->
+                <section class="view" id="reportsView">
+                    <div class="view-header">
+                        <h2>Reports & Analytics</h2>
+                    </div>
+
+                    <div class="reports-grid">
+                        <div class="report-card" data-report="custodian">
+                            <div class="report-card-icon">📋</div>
+                            <h3>Custodian Report</h3>
+                            <p>Who has which files and for how long</p>
+                        </div>
+                        <div class="report-card" data-report="deadline">
+                            <div class="report-card-icon">⏰</div>
+                            <h3>Deadline Report</h3>
+                            <p>Upcoming and overdue deadlines</p>
+                        </div>
+                        <div class="report-card" data-report="bottleneck">
+                            <div class="report-card-icon">🚧</div>
+                            <h3>Bottleneck Report</h3>
+                            <p>Files held too long without movement</p>
+                        </div>
+                        <div class="report-card" data-report="risk">
+                            <div class="report-card-icon">⚠️</div>
+                            <h3>Risk Assessment</h3>
+                            <p>Operational risks and recommendations</p>
+                        </div>
+                        <div class="report-card" data-report="audit">
+                            <div class="report-card-icon">📜</div>
+                            <h3>Audit Log</h3>
+                            <p>Complete movement history</p>
+                        </div>
+                        <div class="report-card" data-report="practice">
+                            <div class="report-card-icon">📊</div>
+                            <h3>Practice Area Breakdown</h3>
+                            <p>Files by practice area</p>
+                        </div>
+                    </div>
+
+                    <!-- Report Output -->
+                    <div class="report-output" id="reportOutput">
+                        <!-- Report content loaded dynamically -->
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- File Details Modal -->
+    <div class="modal-overlay" id="fileDetailsModal">
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <h2 id="fileDetailsTitle">File Details</h2>
+                <button class="modal-close" id="closeFileDetails">&times;</button>
+            </div>
+            <div class="modal-body" id="fileDetailsBody">
+                <!-- File details loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- New File Modal -->
+    <div class="modal-overlay" id="newFileModal">
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <h2>Register New File</h2>
+                <button class="modal-close" id="closeNewFile">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="newFileForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="caseName">Case/Matter Name *</label>
+                            <input type="text" id="caseName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="clientName">Client Name *</label>
+                            <input type="text" id="clientName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="practiceArea">Practice Area *</label>
+                            <select id="practiceArea" required>
+                                <!-- Options loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="courtJurisdiction">Court/Jurisdiction</label>
+                            <input type="text" id="courtJurisdiction"
+                                placeholder="e.g., High Court - Commercial Division, Nairobi">
+                        </div>
+                        <div class="form-group">
+                            <label for="assignedAdvocates">Assigned Advocate(s)</label>
+                            <select id="assignedAdvocates" multiple>
+                                <!-- Options loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="initialCustodian">Initial Custodian *</label>
+                            <select id="initialCustodian" required>
+                                <!-- Options loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="fileNotes">Notes</label>
+                            <textarea id="fileNotes" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelNewFile">Cancel</button>
+                        <button type="submit" class="btn-primary">Register File</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movement Modal -->
+    <div class="modal-overlay" id="movementModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Log File Movement</h2>
+                <button class="modal-close" id="closeMovement">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="movementForm">
+                    <div class="form-group">
+                        <label for="movementFile">Select File *</label>
+                        <select id="movementFile" required>
+                            <!-- Options loaded dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="movementTo">Transfer To *</label>
+                        <select id="movementTo" required>
+                            <!-- Options loaded dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="movementPurpose">Purpose *</label>
+                        <select id="movementPurpose" required>
+                            <!-- Options loaded dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="movementNotes">Notes</label>
+                        <textarea id="movementNotes" rows="2"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelMovement">Cancel</button>
+                        <button type="submit" class="btn-primary">Log Movement</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deadline Modal -->
+    <div class="modal-overlay" id="deadlineModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Add Deadline</h2>
+                <button class="modal-close" id="closeDeadline">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="deadlineForm">
+                    <div class="form-group">
+                        <label for="deadlineFile">Select File *</label>
+                        <select id="deadlineFile" required>
+                            <!-- Options loaded dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="deadlineType">Deadline Type *</label>
+                        <select id="deadlineType" required>
+                            <!-- Options loaded dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="deadlineDate">Due Date *</label>
+                        <input type="date" id="deadlineDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="deadlineDescription">Description</label>
+                        <textarea id="deadlineDescription" rows="2"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelDeadline">Cancel</button>
+                        <button type="submit" class="btn-primary">Add Deadline</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Panel -->
+    <div class="notifications-panel" id="notificationsPanel">
+        <div class="notifications-header">
+            <h3>Notifications</h3>
+            <button class="btn-text" id="markAllRead">Mark all read</button>
+        </div>
+        <div class="notifications-list" id="notificationsList">
+            <!-- Notifications loaded dynamically -->
+        </div>
+    </div>
+
+    <!-- QR Scanner Modal -->
+    <div class="modal-overlay" id="qrScannerModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>📷 Scan QR Code</h2>
+                <button class="modal-close" id="closeQrScanner">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="qr-scanner-container">
+                    <div id="qrReaderView"></div>
+                    <div class="qr-scanner-actions">
+                        <button class="btn-primary" id="startScanBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                            Start Camera
+                        </button>
+                        <button class="btn-secondary" id="stopScanBtn" style="display: none;">
+                            Stop Scanning
+                        </button>
+                    </div>
+                    <div class="qr-scan-result" id="qrScanResult" style="display: none;">
+                        <div class="scan-success">
+                            <span class="scan-icon">✅</span>
+                            <span class="scan-message" id="scanMessage"></span>
+                        </div>
+                        <div class="scan-actions" id="scanActions"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Upload Modal -->
+    <div class="modal-overlay" id="fileUploadModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>📎 Upload Documents</h2>
+                <button class="modal-close" id="closeFileUpload">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-icon">📄</div>
+                    <p class="upload-text">Drag & drop files here or click to browse</p>
+                    <p class="upload-hint">PDF, DOC, DOCX, JPG, PNG (max 10MB)</p>
+                    <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" hidden>
+                </div>
+                <div class="upload-progress" id="uploadProgress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <span class="progress-text" id="progressText">Uploading...</span>
+                </div>
+                <div class="uploaded-files" id="uploadedFilesList"></div>
+                <input type="hidden" id="uploadFileId">
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelUpload">Cancel</button>
+                    <button type="button" class="btn-primary" id="confirmUpload">Attach Files</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="database.js"></script>
+    <script src="auth.js"></script>
+    <script src="api-client.js"></script>
+    <script src="websocket-client.js"></script>
+    <script src="sample-data.js"></script>
+    <script src="alert-engine.js"></script>
+    <script src="file-manager.js"></script>
+    <script src="movement-tracker.js"></script>
+    <script src="reports.js"></script>
+    <script src="qr-scanner.js"></script>
+    <script src="file-upload.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>

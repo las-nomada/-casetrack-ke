@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | CaseTrack KE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #c5a059;
+            --primary-dark: #a6854a;
+            --bg-dark: #0a1128;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: url('login-bg.png');
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            color: white;
+        }
+
+        .login-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo-section h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
+
+        .logo-section span {
+            color: var(--primary);
+        }
+
+        .logo-section p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        input,
+        select {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 16px;
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(197, 160, 89, 0.1);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        select option {
+            background: var(--bg-dark);
+            color: white;
+        }
+
+        .btn-login {
+            width: 100%;
+            background: var(--primary);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(197, 160, 89, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .error-msg {
+            color: #ff4d4d;
+            background: rgba(255, 77, 77, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: none;
+            text-align: center;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-card">
+        <div class="logo-section">
+            <h1>CaseTrack <span>KE</span></h1>
+            <p>Law Firm Management System</p>
+        </div>
+
+        <div id="errorMsg" class="error-msg">Invalid credentials. Please try again.</div>
+
+        <form id="loginForm">
+            <div id="loginStep1-2">
+                <div class="form-group">
+                    <label for="userId">Select Identity</label>
+                    <select id="userId" required>
+                        <option value="" disabled selected>Choose your profile...</option>
+                        <option value="USR-001">James Odhiambo (Partner)</option>
+                        <option value="USR-002">Sarah Otieno (Senior Associate)</option>
+                        <option value="USR-003">Peter Mwangi (Associate)</option>
+                        <option value="USR-004">Mary Wanjiru (Registry Clerk)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Security Password</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <div id="loginStep2FA" style="display: none;">
+                <div class="form-group">
+                    <label for="twoFactorCode">Authenticator Code</label>
+                    <input type="text" id="twoFactorCode" placeholder="000000" maxlength="6" inputmode="numeric">
+                    <p style="font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 8px;">Enter the 6-digit code
+                        from your Google Authenticator app.</p>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login" id="loginBtn">Authorize Access</button>
+        </form>
+
+        <div class="footer">
+            &copy; 2026 CaseTrack KE. Restricted Access.
+        </div>
+    </div>
+
+    <script>
+        let currentTempToken = null;
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = document.getElementById('userId').value;
+            const password = document.getElementById('password').value;
+            const twoFactorCode = document.getElementById('twoFactorCode').value;
+            const errorMsg = document.getElementById('errorMsg');
+            const loginBtn = document.getElementById('loginBtn');
+
+            loginBtn.textContent = 'Verifying...';
+            loginBtn.disabled = true;
+            errorMsg.style.display = 'none';
+
+            try {
+                if (!currentTempToken) {
+                    const response = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId, password })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        if (data.requires2FA) {
+                            currentTempToken = data.tempToken;
+                            document.getElementById('loginStep1-2').style.display = 'none';
+                            document.getElementById('loginStep2FA').style.display = 'block';
+                            document.getElementById('twoFactorCode').required = true;
+                            document.getElementById('twoFactorCode').focus();
+                            loginBtn.textContent = 'Verify 2FA';
+                            loginBtn.disabled = false;
+                        } else {
+                            handleSuccessfulLogin(data);
+                        }
+                    } else {
+                        showError(data.error || 'Access denied.');
+                    }
+                } else {
+                    const response = await fetch('/api/auth/2fa/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tempToken: currentTempToken, code: twoFactorCode })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        handleSuccessfulLogin(data);
+                    } else {
+                        showError(data.error || 'Invalid 2FA code.');
+                    }
+                }
+            } catch (err) {
+                showError('Connection error. Please try again.');
+            }
+        });
+
+        function handleSuccessfulLogin(data) {
+            localStorage.setItem('casetrack_token', data.token);
+            localStorage.setItem('casetrack_user', JSON.stringify(data.user));
+            document.cookie = `token=${data.token}; path=/; max-age=86400; SameSite=Strict`;
+            window.location.href = '/';
+        }
+
+        function showError(msg) {
+            const errorMsg = document.getElementById('errorMsg');
+            const loginBtn = document.getElementById('loginBtn');
+            errorMsg.textContent = msg;
+            errorMsg.style.display = 'block';
+            loginBtn.textContent = currentTempToken ? 'Verify 2FA' : 'Authorize Access';
+            loginBtn.disabled = false;
+        }
+    </script>
+</body>
+
+</html>

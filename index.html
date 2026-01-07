@@ -20,41 +20,12 @@
     <!-- Toast Notifications Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- Login Modal -->
-    <div class="modal-overlay" id="loginModal">
-        <div class="modal">
-            <div class="modal-header">
-                <div class="modal-logo">
-                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 12h6m-3-3v6m-7 4h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                </div>
-                <h2>CaseTrack <span class="accent">KE</span></h2>
-                <p class="modal-subtitle">Law Firm File Tracking System</p>
-            </div>
-            <div class="modal-body">
-                <div id="loginStep1">
-                    <h3>Select User Profile</h3>
-                    <div class="user-list" id="userList">
-                        <!-- Users loaded dynamically -->
-                    </div>
-                </div>
-
-                <div id="loginStep2" style="display: none;">
-                    <button class="btn-text" id="backToUsers" style="margin-bottom: 1rem;">← Back to user
-                        selection</button>
-                    <div class="selected-user-preview" id="selectedUserPreview"></div>
-                    <form id="loginForm">
-                        <div class="form-group">
-                            <label for="loginPassword">Enter Password</label>
-                            <input type="password" id="loginPassword" placeholder="••••••••" required>
-                            <p class="form-hint">Default password is LawFirm2026</p>
-                        </div>
-                        <button type="submit" class="btn-primary full-width">Sign In</button>
-                    </form>
-                </div>
-            </div>
+    <!-- Standalone Login via /login -->
+    <div id="loginOverlay"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a1128; z-index: 9999; display: flex; align-items: center; justify-content: center; color: white; display: none;">
+        <div style="text-align: center;">
+            <div class="spinner"></div>
+            <p style="margin-top: 20px; font-weight: 500;">Authenticating...</p>
         </div>
     </div>
 
@@ -160,6 +131,13 @@
                                 <line x1="6" y1="20" x2="6" y2="14" />
                             </svg>
                             Reports
+                        </button>
+                        <button class="nav-btn" data-view="security">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                            </svg>
+                            Security
                         </button>
                     </nav>
                 </div>
@@ -714,6 +692,47 @@
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" id="cancelUpload">Cancel</button>
                     <button type="button" class="btn-primary" id="confirmUpload">Attach Files</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2FA Setup Modal -->
+    <div class="modal-overlay" id="twoFactorModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Secure Your Account</h2>
+                <button class="close-modal" id="close2FA">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="setup2FA-Step1">
+                    <p>Enhance your account security with Two-Factor Authentication using Google Authenticator.</p>
+                    <button class="btn-primary full-width" id="start2FASetup" style="margin-top: 20px;">Begin
+                        Setup</button>
+                </div>
+
+                <div id="setup2FA-Step2" style="display: none; text-align: center;">
+                    <p style="margin-bottom: 20px;">1. Scan this QR code with your Google Authenticator app:</p>
+                    <div id="qrcode"
+                        style="background: white; padding: 15px; display: inline-block; border-radius: 10px; margin-bottom: 20px;">
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Or enter code manually:
+                        <strong id="twoFactorSecretDisplay"></strong></p>
+
+                    <div class="form-group" style="text-align: left;">
+                        <label for="verify2FACode">2. Enter the 6-digit verification code:</label>
+                        <input type="text" id="verify2FACode" placeholder="000000" maxlength="6"
+                            style="text-align: center; letter-spacing: 5px; font-size: 20px;">
+                    </div>
+                    <button class="btn-primary full-width" id="complete2FASetup">Enable 2FA</button>
+                </div>
+
+                <div id="setup2FA-Success" style="display: none; text-align: center;">
+                    <div style="font-size: 48px; color: var(--success); margin-bottom: 20px;">✓</div>
+                    <h3>2FA Enabled!</h3>
+                    <p>Your account is now protected with Two-Factor Authentication. You will be prompted for a code on
+                        your next login.</p>
+                    <button class="btn-primary full-width" id="finish2FASetup" style="margin-top: 20px;">Done</button>
                 </div>
             </div>
         </div>

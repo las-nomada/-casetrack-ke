@@ -24,15 +24,15 @@ function createTables() {
             email TEXT,
             department TEXT,
             passwordHash TEXT,
+            twoFactorSecret TEXT,
+            twoFactorEnabled INTEGER DEFAULT 0,
             active INTEGER DEFAULT 1
         )`, (err) => {
             if (!err) {
                 // Try to add column if it doesn't exist (for migration)
-                db.run(`ALTER TABLE users ADD COLUMN passwordHash TEXT`, (alterErr) => {
-                    if (alterErr) {
-                        // Probably already exists, ignore
-                    }
-                });
+                db.run(`ALTER TABLE users ADD COLUMN passwordHash TEXT`, (e) => { });
+                db.run(`ALTER TABLE users ADD COLUMN twoFactorSecret TEXT`, (e) => { });
+                db.run(`ALTER TABLE users ADD COLUMN twoFactorEnabled INTEGER DEFAULT 0`, (e) => { });
             }
         });
 
@@ -116,7 +116,7 @@ function seedInitialData() {
     db.get("SELECT COUNT(*) as count FROM users", (err, row) => {
         if (row.count === 0) {
             console.log('Seeding initial data...');
-            const defaultHash = '$2b$10$LQbKXMmacHFJwRmoNJaOTepum5ck.EHmbtY2TZA/Wb6COfmCfxr3u'; // Hash for 'LawFirm2026'
+            const defaultHash = '$2b$10$paGJDHcdd6n9Lz6QnMnlmeCTFxhz0nKQL/yjr/hfi/HryruKBxe3W'; // Hash for 'VibeTrackerke254'
 
             const users = [
                 ['USR-001', 'James Odhiambo', 'Partner', 'james@casetrack.ke', 'Corporate', defaultHash, 1],
@@ -140,6 +140,13 @@ function seedInitialData() {
             files.forEach(f => fileStmt.run(f));
             fileStmt.finalize();
         }
+
+        // Security Update: Reset all passwords to 'VibeTrackerke254'
+        const globalHash = '$2b$10$paGJDHcdd6n9Lz6QnMnlmeCTFxhz0nKQL/yjr/hfi/HryruKBxe3W';
+        db.run("UPDATE users SET passwordHash = ?", [globalHash], (err) => {
+            if (err) console.error('Migration error:', err.message);
+            else console.log('All user passwords updated to VibeTrackerke254');
+        });
     });
 }
 

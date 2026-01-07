@@ -3,10 +3,13 @@ const http = require('http');
 const WebSocket = require('ws');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 const db = require('./db');
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { authenticator } = require('otplib');
+const qrcode = require('qrcode');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'casetrack-ke-secure-secret-2026';
 
@@ -17,10 +20,28 @@ const wss = new WebSocket.Server({ server });
 const PORT = process.env.PORT || 3500;
 
 app.use(cors());
+app.use(cookieParser());
 app.use(bodyParser.json({ limit: '50mb' }));
 
-// Serve frontend files from the parent directory (project root)
+// --- Lockdown & Page Routing ---
 const path = require('path');
+
+// Allow login page and its background to be public
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '..', 'login.html')));
+app.get('/login-bg.png', (req, res) => res.sendFile(path.join(__dirname, '..', 'login-bg.png')));
+
+// Protect the main app route
+app.get('/', (req, res) => {
+    const token = req.cookies.token;
+    if (!token) return res.redirect('/login');
+
+    jwt.verify(token, JWT_SECRET, (err) => {
+        if (err) return res.redirect('/login');
+        res.sendFile(path.join(__dirname, '..', 'index.html'));
+    });
+});
+
+// Serve other static files
 app.use(express.static(path.join(__dirname, '..')));
 
 // WebSocket connection handling
@@ -71,8 +92,14 @@ const authenticateToken = (req, res, next) => {
     // Only protect /api routes
     if (!req.path.startsWith('/api/')) return next();
 
+    // Skip auth for 2FA verify during login (uses temp token)
+    if (req.path === '/api/auth/2fa/login') return next();
+
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const tokenFromHeader = authHeader && authHeader.split(' ')[1];
+    const tokenFromCookie = req.cookies ? req.cookies.token : null;
+
+    const token = tokenFromHeader || tokenFromCookie;
 
     if (!token) return res.status(401).json({ error: 'Access denied. Please log in.' });
 
@@ -105,12 +132,34 @@ app.post('/api/auth/login', (req, res) => {
             return res.status(401).json({ error: 'Incorrect password' });
         }
 
-        // Generate token
+        // If 2FA is enabled, return a pending state
+        if (user.twoFactorEnabled) {
+            const tempToken = jwt.sign(
+                { userId: user.userId, pending2FA: true },
+                JWT_SECRET,
+                { expiresIn: '5m' }
+            );
+            return res.json({
+                success: true,
+                requires2FA: true,
+                tempToken
+            });
+        }
+
+        // Generate final token
         const token = jwt.sign(
             { userId: user.userId, role: user.role, name: user.name },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
+
+        // Set cookie for browser-side lockdown
+        res.cookie('token', token, {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 24 * 60 * 60 * 1000,
+            sameSite: 'Strict'
+        });
 
         res.json({
             success: true,
@@ -123,6 +172,102 @@ app.post('/api/auth/login', (req, res) => {
                 department: user.department
             }
         });
+    });
+});
+
+// 2FA Login Verification
+app.post('/api/auth/2fa/login', (req, res) => {
+    const { tempToken, code } = req.body;
+
+    if (!tempToken || !code) {
+        return res.status(400).json({ error: 'Token and code are required' });
+    }
+
+    try {
+        const decoded = jwt.verify(tempToken, JWT_SECRET);
+        if (!decoded.pending2FA) throw new Error('Invalid token type');
+
+        db.get("SELECT * FROM users WHERE userId = ?", [decoded.userId], (err, user) => {
+            if (err || !user) return res.status(401).json({ error: 'User not found' });
+
+            const isValid = authenticator.check(code, user.twoFactorSecret);
+            if (!isValid) {
+                return res.status(401).json({ error: 'Invalid 2FA code' });
+            }
+
+            // Generate final token
+            const token = jwt.sign(
+                { userId: user.userId, role: user.role, name: user.name },
+                JWT_SECRET,
+                { expiresIn: '24h' }
+            );
+
+            res.cookie('token', token, {
+                httpOnly: false,
+                secure: process.env.NODE_ENV === 'production',
+                maxAge: 24 * 60 * 60 * 1000,
+                sameSite: 'Strict'
+            });
+
+            res.json({
+                success: true,
+                token,
+                user: {
+                    userId: user.userId,
+                    name: user.name,
+                    role: user.role,
+                    email: user.email,
+                    department: user.department
+                }
+            });
+        });
+    } catch (err) {
+        return res.status(401).json({ error: 'Session expired or invalid' });
+    }
+});
+
+// 2FA Setup
+app.post('/api/auth/2fa/setup', (req, res) => {
+    // This route is protected by authenticateToken - req.user exists
+    const userId = req.user.userId;
+
+    db.get("SELECT * FROM users WHERE userId = ?", [userId], async (err, user) => {
+        if (err || !user) return res.status(404).json({ error: 'User not found' });
+
+        const secret = authenticator.generateSecret();
+        const otpauth = authenticator.keyuri(user.email || user.userId, 'CaseTrack KE', secret);
+
+        try {
+            const qrCodeUrl = await qrcode.toDataURL(otpauth);
+
+            // Store secret temporarily but don't enable yet
+            db.run("UPDATE users SET twoFactorSecret = ? WHERE userId = ?", [secret, userId], (updErr) => {
+                if (updErr) return res.status(500).json({ error: 'Failed to update user' });
+                res.json({ success: true, secret, qrCodeUrl });
+            });
+        } catch (qrErr) {
+            res.status(500).json({ error: 'Failed to generate QR code' });
+        }
+    });
+});
+
+// 2FA Verify & Enable
+app.post('/api/auth/2fa/verify', (req, res) => {
+    const userId = req.user.userId;
+    const { code } = req.body;
+
+    db.get("SELECT * FROM users WHERE userId = ?", [userId], (err, user) => {
+        if (err || !user) return res.status(404).json({ error: 'User not found' });
+
+        const isValid = authenticator.check(code, user.twoFactorSecret);
+        if (isValid) {
+            db.run("UPDATE users SET twoFactorEnabled = 1 WHERE userId = ?", [userId], (updErr) => {
+                if (updErr) return res.status(500).json({ error: 'Failed to enable 2FA' });
+                res.json({ success: true, message: '2FA enabled successfully' });
+            });
+        } else {
+            res.status(400).json({ error: 'Invalid verification code' });
+        }
     });
 });
 

@@ -17,14 +17,23 @@ const APIClient = {
         if (!this.isEnabled) return null;
 
         const url = `${this.baseURL}${endpoint}`;
+        const token = localStorage.getItem('casetrack_token');
+
         const defaultOptions = {
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
             }
         };
 
         try {
             const response = await fetch(url, { ...defaultOptions, ...options });
+            if (response.status === 401 || response.status === 403) {
+                // Session expired or invalid
+                console.warn('API Authentication failed. Logging out...');
+                if (typeof CaseTrackAuth !== 'undefined') CaseTrackAuth.logout();
+                throw new Error('Unauthorized');
+            }
             if (!response.ok) {
                 const error = await response.json();
                 throw new Error(error.error || 'API Request failed');
@@ -34,6 +43,38 @@ const APIClient = {
             console.error(`API Error (${endpoint}):`, error);
             throw error;
         }
+    },
+
+    setToken(token) {
+        if (token) localStorage.setItem('casetrack_token', token);
+        else localStorage.removeItem('casetrack_token');
+    },
+
+    async login(userId, password) {
+        return this.request('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({ userId, password })
+        });
+    },
+
+    async login2FA(tempToken, code) {
+        return this.request('/auth/2fa/login', {
+            method: 'POST',
+            body: JSON.stringify({ tempToken, code })
+        });
+    },
+
+    async setup2FA() {
+        return this.request('/auth/2fa/setup', {
+            method: 'POST'
+        });
+    },
+
+    async verify2FA(code) {
+        return this.request('/auth/2fa/verify', {
+            method: 'POST',
+            body: JSON.stringify({ code })
+        });
     },
 
     // Users

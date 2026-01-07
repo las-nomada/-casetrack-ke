@@ -52,8 +52,17 @@ const CaseTrackAuth = {
      * Initialize authentication - check for existing session
      */
     init() {
+        const hasCookie = document.cookie.includes('token=');
+
+        if (!hasCookie) {
+            this.logout(); // Ensure localized cleanup if cookie is gone
+            return false;
+        }
+
         const session = this.loadSession();
         if (session && session.userId) {
+            // In a real app, we'd verify the token with the server here
+            // For now, we trust the cookie existance + local session
             const user = CaseTrackDB.getUser(session.userId);
             if (user && user.active) {
                 this.currentUser = user;
@@ -93,6 +102,14 @@ const CaseTrackAuth = {
             APIClient.setToken(null);
         }
         localStorage.removeItem(this.STORAGE_KEY);
+        localStorage.removeItem('casetrack_token');
+        localStorage.removeItem('casetrack_user');
+
+        // Clear auth cookie for total lockdown
+        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Strict";
+
+        // Force redirect to login page
+        window.location.href = '/login';
         return true;
     },
 

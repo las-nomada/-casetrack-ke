@@ -12,25 +12,23 @@ class CaseTrackKE {
     }
 
     async init() {
-        // Initialize sample data if needed
+        // Initialize sample data if needed (only locally)
         SampleData.init();
 
         // Apply theme
         this.applyTheme();
 
-        // Bind login modal before checking session
-        this.loginModal = document.getElementById('loginModal');
-        this.bindElements(); // Bind early so we have navigation/modal refs
+        this.bindElements();
 
-        // Initial background sync to get users for login screen
+        // Initial background sync
         await CaseTrackDB.syncWithBackend();
 
         // Check for existing session
         if (CaseTrackAuth.init()) {
-            this.hideLoginModal();
             this.setupUI();
         } else {
-            this.showLoginModal();
+            // Server should have redirected to /login, but this is a fallback for client-side routing
+            window.location.href = '/login';
         }
     }
 
@@ -83,7 +81,6 @@ class CaseTrackKE {
         this.views = document.querySelectorAll('.view');
 
         // Modals
-        this.loginModal = document.getElementById('loginModal');
         this.fileDetailsModal = document.getElementById('fileDetailsModal');
         this.newFileModal = document.getElementById('newFileModal');
         this.movementModal = document.getElementById('movementModal');
@@ -144,12 +141,11 @@ class CaseTrackKE {
         document.getElementById('cancelDeadline')?.addEventListener('click', () => this.closeModal('deadlineModal'));
         document.getElementById('deadlineForm')?.addEventListener('submit', (e) => this.handleDeadlineSubmit(e));
 
-        // Login flow
-        document.getElementById('loginForm')?.addEventListener('submit', (e) => this.handleLoginSubmit(e));
-        document.getElementById('backToUsers')?.addEventListener('click', () => {
-            document.getElementById('loginStep2').style.display = 'none';
-            document.getElementById('loginStep1').style.display = 'block';
-        });
+        // 2FA Setup
+        document.getElementById('start2FASetup')?.addEventListener('click', () => this.handle2FASetupStart());
+        document.getElementById('complete2FASetup')?.addEventListener('click', () => this.handle2FASetupVerify());
+        document.getElementById('close2FA')?.addEventListener('click', () => this.closeModal('twoFactorModal'));
+        document.getElementById('finish2FASetup')?.addEventListener('click', () => this.closeModal('twoFactorModal'));
 
         // File details
         document.getElementById('closeFileDetails')?.addEventListener('click', () => this.closeModal('fileDetailsModal'));
@@ -191,100 +187,19 @@ class CaseTrackKE {
     }
 
     // ==========================================
-    // AUTHENTICATION
+    // NOTIFICATIONS & ALERTS
     // ==========================================
 
-    showLoginModal() {
-        this.loginModal.classList.add('active');
-        this.loadUserList();
-    }
-
-    hideLoginModal() {
-        this.loginModal.classList.remove('active');
-    }
-
-    loadUserList() {
-        const userList = document.getElementById('userList');
-        const users = CaseTrackDB.getAllUsers();
-
-        // Reset to step 1
-        document.getElementById('loginStep1').style.display = 'block';
-        document.getElementById('loginStep2').style.display = 'none';
-
-        userList.innerHTML = users.map(user => {
-            const roleInfo = CaseTrackAuth.getRoleInfo(user.role);
-            return `
-                <div class="user-option" data-user-id="${user.userId}">
-                    <span class="user-option-icon">${roleInfo?.icon || '👤'}</span>
-                    <div class="user-option-info">
-                        <div class="user-option-name">${user.name}</div>
-                        <div class="user-option-role">${user.role} — ${user.department}</div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        // Bind click events
-        userList.querySelectorAll('.user-option').forEach(option => {
-            option.addEventListener('click', () => {
-                const userId = option.dataset.userId;
-                this.showPasswordStep(userId);
-            });
-        });
-    }
-
-    showPasswordStep(userId) {
-        const user = CaseTrackDB.getUser(userId);
-        if (!user) return;
-
-        this.pendingLoginUserId = userId;
-
-        const preview = document.getElementById('selectedUserPreview');
-        const roleInfo = CaseTrackAuth.getRoleInfo(user.role);
-
-        preview.innerHTML = `
-            <div class="user-option selected">
-                <span class="user-option-icon">${roleInfo?.icon || '👤'}</span>
-                <div class="user-option-info">
-                    <div class="user-option-name">${user.name}</div>
-                    <div class="user-option-role">${user.role} — ${user.department}</div>
-                </div>
-            </div>
-        `;
-
-        document.getElementById('loginStep1').style.display = 'none';
-        document.getElementById('loginStep2').style.display = 'block';
-        document.getElementById('loginPassword').value = '';
-        document.getElementById('loginPassword').focus();
-    }
-
-    async handleLoginSubmit(e) {
-        e.preventDefault();
-        const password = document.getElementById('loginPassword').value;
-        const userId = this.pendingLoginUserId;
-
-        if (!userId || !password) return;
-
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        const originalText = submitBtn.textContent;
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Authenticating...';
-
-        try {
-            const result = await CaseTrackAuth.login(userId, password);
-            if (result.success) {
-                this.hideLoginModal();
-                await this.setupUI();
-                this.showNotification('Authentication successful. Welcome back!', 'success');
-            } else {
-                this.showNotification(result.error || 'Invalid password. Access denied.', 'danger');
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
-            }
-        } catch (err) {
-            this.showNotification('Connection error while authenticating.', 'danger');
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
+    showNotification(message, type = 'info') {
+        if (typeof CaseTrackUI !== 'undefined' && CaseTrackUI.showToast) {
+            CaseTrackUI.showToast(message, type);
+        } else {
+            // Fallback for app.js internal call
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.getElementById('toastContainer')?.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
         }
     }
 
@@ -365,6 +280,10 @@ class CaseTrackKE {
                 break;
             case 'reports':
                 this.loadReportsView();
+                break;
+            case 'security':
+                this.openModal('twoFactorModal');
+                // Revert to previous view after choice or just keep it
                 break;
         }
 
@@ -1369,6 +1288,40 @@ class CaseTrackKE {
             this.updateQuickStats();
             this.loadDashboard();
             AlertEngine.runAlertCheck();
+        }
+    }
+
+    // ==========================================
+    // 2FA SETUP
+    // ==========================================
+
+    async handle2FASetupStart() {
+        try {
+            const data = await APIClient.setup2FA();
+            if (data && data.qrCodeUrl) {
+                document.getElementById('setup2FA-Step1').style.display = 'none';
+                document.getElementById('setup2FA-Step2').style.display = 'block';
+                document.getElementById('qrcode').innerHTML = `<img src="${data.qrCodeUrl}" style="width: 200px; height: 200px;">`;
+                document.getElementById('twoFactorSecretDisplay').textContent = data.secret;
+            }
+        } catch (err) {
+            this.showNotification('Failed to initialize 2FA setup', 'error');
+        }
+    }
+
+    async handle2FASetupVerify() {
+        const code = document.getElementById('verify2FACode').value;
+        if (!code) return;
+
+        try {
+            const data = await APIClient.verify2FA(code);
+            if (data.success) {
+                document.getElementById('setup2FA-Step2').style.display = 'none';
+                document.getElementById('setup2FA-Success').style.display = 'block';
+                this.showNotification('Two-Factor Authentication enabled', 'success');
+            }
+        } catch (err) {
+            this.showNotification('Invalid verification code', 'error');
         }
     }
 

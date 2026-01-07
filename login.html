@@ -272,6 +272,10 @@
         function handleSuccessfulLogin(data) {
             localStorage.setItem('casetrack_token', data.token);
             localStorage.setItem('casetrack_user', JSON.stringify(data.user));
+            localStorage.setItem('casetrack_session', JSON.stringify({
+                userId: data.user.userId,
+                loginTime: new Date().toISOString()
+            }));
             document.cookie = `token=${data.token}; path=/; max-age=86400; SameSite=Strict`;
             window.location.href = '/';
         }

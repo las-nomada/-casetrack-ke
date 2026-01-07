@@ -182,10 +182,8 @@
         <form id="loginForm">
             <div id="loginStep1-2">
                 <div class="form-group">
-                    <label for="userId">Select Identity</label>
-                    <select id="userId" required>
-                        <option value="" disabled selected>Loading users...</option>
-                    </select>
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" placeholder="name@firm.com" required>
                 </div>
 
                 <div class="form-group">
@@ -220,25 +218,9 @@
     <script>
         let currentTempToken = null;
 
-        // Load users on startup
-        async function loadUsers() {
-            const userIdSelect = document.getElementById('userId');
-            try {
-                const response = await fetch('/api/auth/users');
-                const users = await response.json();
-
-                userIdSelect.innerHTML = '<option value="" disabled selected>Choose your profile...</option>';
-                users.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.userId;
-                    option.textContent = `${user.name} (${user.role})`;
-                    userIdSelect.appendChild(option);
-                });
-            } catch (err) {
-                userIdSelect.innerHTML = '<option value="" disabled>Error loading users</option>';
-            }
-        }
-        loadUsers();
+        // Load users on startup - REMOVED for security
+        // async function loadUsers() { ... }
+        // loadUsers();
 
         document.getElementById('backToLogin').addEventListener('click', (e) => {
             e.preventDefault();
@@ -251,7 +233,7 @@
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const userId = document.getElementById('userId').value;
+            const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const twoFactorCode = document.getElementById('twoFactorCode').value;
             const errorMsg = document.getElementById('errorMsg');
@@ -266,7 +248,7 @@
                     const response = await fetch('/api/auth/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId, password })
+                        body: JSON.stringify({ email, password })
                     });
 
                     const data = await response.json();

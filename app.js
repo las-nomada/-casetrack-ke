@@ -197,6 +197,12 @@ class CaseTrackKE {
             });
         });
 
+        // Admin Actions
+        document.getElementById('addPractitionerBtn')?.addEventListener('click', () => this.openModal('addPractitionerModal'));
+        document.getElementById('closeAddPractitioner')?.addEventListener('click', () => this.closeModal('addPractitionerModal'));
+        document.getElementById('cancelAddPractitioner')?.addEventListener('click', () => this.closeModal('addPractitionerModal'));
+        document.getElementById('addPractitionerForm')?.addEventListener('submit', (e) => this.handleAddPractitionerSubmit(e));
+
         // Close notifications panel on outside click
         document.addEventListener('click', (e) => {
             if (this.notificationsPanelOpen &&
@@ -1477,6 +1483,45 @@ class CaseTrackKE {
     /**
      * Show toast notification
      */
+    async handleAddPractitionerSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const btn = form.querySelector('button[type="submit"]');
+        const originalText = btn.textContent;
+        btn.textContent = 'Creating...';
+        btn.disabled = true;
+
+        const userData = {
+            name: document.getElementById('newUserName').value,
+            email: document.getElementById('newUserEmail').value,
+            role: document.getElementById('newUserRole').value,
+            department: document.getElementById('newUserDept').value || 'Legal',
+            password: document.getElementById('newUserPassword').value
+        };
+
+        try {
+            const result = await CaseTrackAPI.createUser(userData);
+            if (result.success) {
+                this.showNotification('Practitioner account created successfully', 'success');
+                this.closeModal('addPractitionerModal');
+                form.reset();
+                this.loadAdminTeamTable();
+            } else {
+                this.showNotification(result.error || 'Failed to create account', 'error');
+            }
+        } catch (error) {
+            console.error('Error creating user:', error);
+            this.showNotification('Error connecting to server', 'error');
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    // ==========================================
+    // NOTIFICATIONS & UTILS
+    // ==========================================
+
     showNotification(message, type = 'success') {
         const container = document.getElementById('toastContainer');
         if (!container) {

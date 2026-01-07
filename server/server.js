@@ -32,13 +32,8 @@ app.get('/signup', (req, res) => res.sendFile(path.join(__dirname, '..', 'signup
 app.get('/login-bg.png', (req, res) => res.sendFile(path.join(__dirname, '..', 'login-bg.png')));
 
 
-// Public endpoint for login dropdown
-app.get('/api/auth/users', (req, res) => {
-    db.all("SELECT userId, name, role FROM users WHERE active = 1", [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
-});
+// Public endpoint for login dropdown REMOVED for security
+// app.get('/api/auth/users', ...);
 
 
 // Protect the main app route
@@ -152,13 +147,13 @@ app.post('/api/auth/signup', (req, res) => {
 
 // Auth Login
 app.post('/api/auth/login', (req, res) => {
-    const { userId, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!userId || !password) {
-        return res.status(400).json({ error: 'User ID and password are required' });
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    db.get("SELECT * FROM users WHERE userId = ? AND active = 1", [userId], (err, user) => {
+    db.get("SELECT * FROM users WHERE email = ? AND active = 1", [email], (err, user) => {
         if (err) return res.status(500).json({ error: 'Internal server error' });
         if (!user) return res.status(401).json({ error: 'User not found or inactive' });
 
@@ -309,10 +304,15 @@ app.get('/api/users', (req, res) => {
 });
 
 app.post('/api/users', (req, res) => {
+    // Permission check
+    if (!req.user || !req.user.isFirmOwner) {
+        return res.status(403).json({ error: 'Only Firm Owners can add new practitioners.' });
+    }
     const { userId, name, role, email, department, password } = req.body;
 
     // Enforce 3 Advocate Limit
-    db.get("SELECT COUNT(*) as count FROM users WHERE role IN ('Advocate', 'Partner', 'Associate')", [], (err, row) => {
+    // Enforce 3 Advocate Limit (per firm)
+    db.get("SELECT COUNT(*) as count FROM users WHERE firmName = ? AND role IN ('Advocate', 'Partner', 'Associate')", [req.user.firmName], (err, row) => {
         if (err) return res.status(500).json({ error: 'Database error' });
 
         const isAdvocateRole = ['Advocate', 'Partner', 'Associate'].includes(role);
@@ -324,8 +324,8 @@ app.post('/api/users', (req, res) => {
         const hash = password ? bcrypt.hashSync(password, 10) : '$2b$10$paGJDHcdd6n9Lz6QnMnlmeCTFxhz0nKQL/yjr/hfi/HryruKBxe3W';
 
         db.run(
-            "INSERT INTO users (userId, name, role, email, department, passwordHash, active) VALUES (?, ?, ?, ?, ?, ?, 1)",
-            [id, name, role, email, department, hash],
+            "INSERT INTO users (userId, name, role, email, department, firmName, isFirmOwner, passwordHash, active) VALUES (?, ?, ?, ?, ?, ?, 0, ?, 1)",
+            [id, name, role, email, department, req.user.firmName, hash],
             function (err) {
                 if (err) return res.status(500).json({ error: err.message });
                 res.status(201).json({ success: true, userId: id });

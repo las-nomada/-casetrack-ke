@@ -480,6 +480,71 @@
                         <!-- Report content loaded dynamically -->
                     </div>
                 </section>
+
+                <!-- Admin Council View (Restricted) -->
+                <section class="view" id="adminView">
+                    <div class="view-header">
+                        <h2>Admin Council</h2>
+                        <div class="view-actions">
+                            <!-- Action buttons will go here -->
+                        </div>
+                    </div>
+
+                    <div class="admin-tabs">
+                        <button class="admin-tab-btn active" data-admin-view="team">Team Management</button>
+                        <button class="admin-tab-btn" data-admin-view="files">File Disposal</button>
+                    </div>
+
+                    <!-- Team Management View -->
+                    <div id="admin-team-view" class="admin-view">
+                        <div class="view-actions" style="margin-bottom: 20px; text-align: right;">
+                            <button class="btn-primary" id="addPractitionerBtn">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Add Practitioner
+                            </button>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Practitioner</th>
+                                    <th>Role</th>
+                                    <th>Department</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminTeamTable">
+                                <!-- Team members loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- File Disposal View -->
+                    <div id="admin-files-view" class="admin-view" style="display: none;">
+                        <div class="filter-bar">
+                            <input type="text" id="adminFileSearch" placeholder="Search files to dispose..."
+                                style="width: 100%;">
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>File ID</th>
+                                    <th>Case Name</th>
+                                    <th>Practice Area</th>
+                                    <th>Status</th>
+                                    <th>Disposal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminFilesTable">
+                                <!-- Files loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
             </div>
         </main>
     </div>
@@ -704,6 +769,92 @@
                     <button type="button" class="btn-secondary" id="cancelUpload">Cancel</button>
                     <button type="button" class="btn-primary" id="confirmUpload">Attach Files</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Practitioner Modal -->
+    <div class="modal-overlay" id="addPractitionerModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Add New Practitioner</h2>
+                <button class="modal-close" id="closeAddPractitioner">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addPractitionerForm">
+                    <div class="form-group">
+                        <label for="newUserName">Full Name *</label>
+                        <input type="text" id="newUserName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newUserEmail">Email Address *</label>
+                        <input type="email" id="newUserEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newUserRole">Role *</label>
+                        <select id="newUserRole" required>
+                            <option value="Associate">Associate</option>
+                            <option value="Partner">Partner</option>
+                            <option value="Advocate">Advocate</option>
+                            <option value="Support Staff">Support Staff</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="newUserDept">Department</label>
+                        <input type="text" id="newUserDept" placeholder="e.g. Conveyancing" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newUserPassword">Initial Password *</label>
+                        <input type="password" id="newUserPassword" required minlength="6">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelAddPractitioner">Cancel</button>
+                        <button type="submit" class="btn-primary">Create Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Practitioner Modal -->
+    <div class="modal-overlay" id="addPractitionerModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Add New Practitioner</h2>
+                <button class="modal-close" id="closeAddPractitioner">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addPractitionerForm">
+                    <div class="form-group">
+                        <label for="newUserName">Full Name *</label>
+                        <input type="text" id="newUserName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newUserEmail">Email Address *</label>
+                        <input type="email" id="newUserEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newUserRole">Role *</label>
+                        <select id="newUserRole" required>
+                            <option value="Associate">Associate</option>
+                            <option value="Partner">Partner</option>
+                            <option value="Advocate">Advocate</option>
+                            <option value="Support Staff">Support Staff</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="newUserDept">Department</label>
+                        <input type="text" id="newUserDept" placeholder="e.g. Conveyancing" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newUserPassword">Initial Password *</label>
+                        <input type="password" id="newUserPassword" required minlength="6">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelAddPractitioner">Cancel</button>
+                        <button type="submit" class="btn-primary">Create Account</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

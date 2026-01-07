@@ -186,7 +186,7 @@
     <div class="signup-card">
         <div class="logo-section">
             <h1>CaseTrack <span>KE</span></h1>
-            <p style="font-size: 14px; color: rgba(255,255,255,0.6);">Create your practitioner account</p>
+            <p style="font-size: 14px; color: rgba(255,255,255,0.6);">Register your Law Firm</p>
         </div>
 
         <div id="errorMsg" class="error-msg"></div>
@@ -194,7 +194,12 @@
 
         <form id="signupForm">
             <div class="form-group">
-                <label for="name">Full Name</label>
+                <label for="firmName">Law Firm Name</label>
+                <input type="text" id="firmName" placeholder="Mbugua & Partners Advocates" required>
+            </div>
+
+            <div class="form-group">
+                <label for="name">Owner/Administrator Name</label>
                 <input type="text" id="name" placeholder="Adv. Jane Doe" required>
             </div>
 
@@ -246,6 +251,7 @@
     <script>
         document.getElementById('signupForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const firmName = document.getElementById('firmName').value;
             const name = document.getElementById('name').value;
             const role = document.getElementById('role').value;
             const department = document.getElementById('department').value;
@@ -271,7 +277,7 @@
                 const response = await fetch('/api/auth/signup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, role, department, email, password })
+                    body: JSON.stringify({ firmName, name, role, department, email, password })
                 });
 
                 const data = await response.json();

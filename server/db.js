@@ -23,13 +23,17 @@ function createTables() {
             role TEXT NOT NULL,
             email TEXT,
             department TEXT,
+            firmName TEXT,
+            isFirmOwner INTEGER DEFAULT 0,
             passwordHash TEXT,
             twoFactorSecret TEXT,
             twoFactorEnabled INTEGER DEFAULT 0,
             active INTEGER DEFAULT 1
         )`, (err) => {
             if (!err) {
-                // Try to add column if it doesn't exist (for migration)
+                // Migrations
+                db.run(`ALTER TABLE users ADD COLUMN firmName TEXT`, (e) => { });
+                db.run(`ALTER TABLE users ADD COLUMN isFirmOwner INTEGER DEFAULT 0`, (e) => { });
                 db.run(`ALTER TABLE users ADD COLUMN passwordHash TEXT`, (e) => { });
                 db.run(`ALTER TABLE users ADD COLUMN twoFactorSecret TEXT`, (e) => { });
                 db.run(`ALTER TABLE users ADD COLUMN twoFactorEnabled INTEGER DEFAULT 0`, (e) => { });

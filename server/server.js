@@ -128,21 +128,19 @@ app.use(authenticateToken);
 
 // Auth Signup
 app.post('/api/auth/signup', (req, res) => {
-    const { name, role, department, email, password } = req.body;
+    const { firmName, name, role, department, email, password } = req.body;
 
-    // Enforce 5 user limit
-    db.get("SELECT COUNT(*) as count FROM users", [], (err, row) => {
+    // Firm-based model allows only 1 firm owner to sign up at a time per instance for now
+    db.get("SELECT COUNT(*) as count FROM users WHERE isFirmOwner = 1", [], (err, row) => {
         if (err) return res.status(500).json({ error: 'Database error' });
-        if (row.count >= 5) {
-            return res.status(403).json({ error: 'Registration limit reached. Maximum of 5 practitioners allowed.' });
-        }
 
+        const isFirstUser = row.count === 0;
         const userId = `USR-${Math.floor(100 + Math.random() * 899)}`;
         const hash = bcrypt.hashSync(password, 10);
 
         db.run(
-            "INSERT INTO users (userId, name, role, email, department, passwordHash, active) VALUES (?, ?, ?, ?, ?, ?, 1)",
-            [userId, name, role, email, department, hash],
+            "INSERT INTO users (userId, name, role, email, department, firmName, isFirmOwner, passwordHash, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)",
+            [userId, name, role, email, department, firmName, isFirstUser ? 1 : 0, hash],
             function (err) {
                 if (err) return res.status(500).json({ error: err.message });
                 res.status(201).json({ success: true, userId });
@@ -150,6 +148,7 @@ app.post('/api/auth/signup', (req, res) => {
         );
     });
 });
+
 
 // Auth Login
 app.post('/api/auth/login', (req, res) => {
@@ -320,17 +319,28 @@ app.get('/api/users', (req, res) => {
 
 app.post('/api/users', (req, res) => {
     const { userId, name, role, email, department, password } = req.body;
-    const id = userId || `USR-${Math.floor(100 + Math.random() * 899)}`;
-    const hash = password ? bcrypt.hashSync(password, 10) : '$2b$10$paGJDHcdd6n9Lz6QnMnlmeCTFxhz0nKQL/yjr/hfi/HryruKBxe3W';
 
-    db.run(
-        "INSERT INTO users (userId, name, role, email, department, passwordHash, active) VALUES (?, ?, ?, ?, ?, ?, 1)",
-        [id, name, role, email, department, hash],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.status(201).json({ success: true, userId: id });
+    // Enforce 3 Advocate Limit
+    db.get("SELECT COUNT(*) as count FROM users WHERE role IN ('Advocate', 'Partner', 'Associate')", [], (err, row) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+
+        const isAdvocateRole = ['Advocate', 'Partner', 'Associate'].includes(role);
+        if (isAdvocateRole && row.count >= 3) {
+            return res.status(403).json({ error: 'Advocate limit reached (3). Please upgrade to a Pro plan to add more practitioners.' });
         }
-    );
+
+        const id = userId || `USR-${Math.floor(100 + Math.random() * 899)}`;
+        const hash = password ? bcrypt.hashSync(password, 10) : '$2b$10$paGJDHcdd6n9Lz6QnMnlmeCTFxhz0nKQL/yjr/hfi/HryruKBxe3W';
+
+        db.run(
+            "INSERT INTO users (userId, name, role, email, department, passwordHash, active) VALUES (?, ?, ?, ?, ?, ?, 1)",
+            [id, name, role, email, department, hash],
+            function (err) {
+                if (err) return res.status(500).json({ error: err.message });
+                res.status(201).json({ success: true, userId: id });
+            }
+        );
+    });
 });
 
 

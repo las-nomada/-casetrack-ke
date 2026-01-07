@@ -52,19 +52,34 @@ const CaseTrackAuth = {
      * Initialize authentication - check for existing session
      */
     init() {
-        const hasCookie = document.cookie.includes('token=');
+        // More specific cookie check
+        const cookies = document.cookie.split(';').map(c => c.trim());
+        const tokenCookie = cookies.find(c => c.startsWith('token='));
 
-        if (!hasCookie) {
-            this.logout(); // Ensure localized cleanup if cookie is gone
+        if (!tokenCookie) {
+            this.logout();
             return false;
         }
 
         const session = this.loadSession();
         if (session && session.userId) {
-            // In a real app, we'd verify the token with the server here
-            // For now, we trust the cookie existance + local session
-            const user = CaseTrackDB.getUser(session.userId);
-            if (user && user.active) {
+            // First try to get user from synced database
+            let user = CaseTrackDB.getUser(session.userId);
+
+            // Fallback: Use user info saved at login if sync hasn't happened yet
+            if (!user) {
+                const storedUser = localStorage.getItem('casetrack_user');
+                if (storedUser) {
+                    try {
+                        const parsed = JSON.parse(storedUser);
+                        if (parsed.userId === session.userId) {
+                            user = parsed;
+                        }
+                    } catch (e) { }
+                }
+            }
+
+            if (user && (user.active || user.active === undefined)) {
                 this.currentUser = user;
                 return true;
             }

@@ -26,9 +26,11 @@ app.use(bodyParser.json({ limit: '50mb' }));
 // --- Lockdown & Page Routing ---
 const path = require('path');
 
-// Allow login page and its background to be public
+// Allow login/signup page and its background to be public
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '..', 'login.html')));
+app.get('/signup', (req, res) => res.sendFile(path.join(__dirname, '..', 'signup.html')));
 app.get('/login-bg.png', (req, res) => res.sendFile(path.join(__dirname, '..', 'login-bg.png')));
+
 
 // Public endpoint for login dropdown
 app.get('/api/auth/users', (req, res) => {
@@ -95,8 +97,9 @@ function broadcast(data) {
 
 // --- Authentication Middleware ---
 const authenticateToken = (req, res, next) => {
-    // Skip auth for login route
-    if (req.path === '/api/auth/login') return next();
+    // Skip auth for login/signup routes
+    if (req.path === '/api/auth/login' || req.path === '/api/auth/signup') return next();
+
 
     // Only protect /api routes
     if (!req.path.startsWith('/api/')) return next();
@@ -122,6 +125,31 @@ const authenticateToken = (req, res, next) => {
 app.use(authenticateToken);
 
 // --- API Routes ---
+
+// Auth Signup
+app.post('/api/auth/signup', (req, res) => {
+    const { name, role, department, email, password } = req.body;
+
+    // Enforce 5 user limit
+    db.get("SELECT COUNT(*) as count FROM users", [], (err, row) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        if (row.count >= 5) {
+            return res.status(403).json({ error: 'Registration limit reached. Maximum of 5 practitioners allowed.' });
+        }
+
+        const userId = `USR-${Math.floor(100 + Math.random() * 899)}`;
+        const hash = bcrypt.hashSync(password, 10);
+
+        db.run(
+            "INSERT INTO users (userId, name, role, email, department, passwordHash, active) VALUES (?, ?, ?, ?, ?, ?, 1)",
+            [userId, name, role, email, department, hash],
+            function (err) {
+                if (err) return res.status(500).json({ error: err.message });
+                res.status(201).json({ success: true, userId });
+            }
+        );
+    });
+});
 
 // Auth Login
 app.post('/api/auth/login', (req, res) => {

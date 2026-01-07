@@ -112,42 +112,17 @@ function createTables() {
 }
 
 function seedInitialData() {
-    console.log('Verifying user data...');
-    const defaultHash = '$2b$10$paGJDHcdd6n9Lz6QnMnlmeCTFxhz0nKQL/yjr/hfi/HryruKBxe3W'; // Hash for 'VibeTrackerke254'
-
-    const users = [
-        ['USR-001', 'James Odhiambo', 'Partner', 'james@casetrack.ke', 'Corporate', defaultHash, 1],
-        ['USR-002', 'Sarah Otieno', 'Advocate', 'sarah@casetrack.ke', 'Litigation', defaultHash, 1],
-        ['USR-003', 'Peter Mwangi', 'Advocate', 'peter@casetrack.ke', 'Criminal', defaultHash, 1],
-        ['USR-004', 'Mary Wanjiru', 'Clerk', 'mary@casetrack.ke', 'Registry', defaultHash, 1]
-    ];
-
+    // One-time cleanup: Wipe existing sample data for production transition
     db.serialize(() => {
-        const stmt = db.prepare("INSERT OR IGNORE INTO users (userId, name, role, email, department, passwordHash, active) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        users.forEach(u => stmt.run(u));
-        stmt.finalize();
-
-        // Security Update: Force Reset all passwords to 'VibeTrackerke254'
-        db.run("UPDATE users SET passwordHash = ?", [defaultHash], (err) => {
-            if (err) console.error('Migration error:', err.message);
-            else console.log('User synchronization complete. All users ready for 2FA.');
-        });
+        db.run("DELETE FROM users");
+        db.run("DELETE FROM files");
+        db.run("DELETE FROM movements");
+        db.run("DELETE FROM deadlines");
+        db.run("DELETE FROM alerts");
+        db.run("DELETE FROM attachments");
+        console.log('Database wiped for production transition.');
     });
-
-    // Seed initial files if empty
-    db.get("SELECT COUNT(*) as count FROM files", (err, row) => {
-        if (row && row.count === 0) {
-            console.log('Seeding initial files...');
-            const files = [
-                ['CT-2026-0001', 'Kenya Commercial Bank v. Sunrise Enterprises', 'Kenya Commercial Bank', 'Banking & Finance', 'Active', 'USR-002', 'High Court - Milimani', 'USR-001,USR-002', 'High stakes debt recovery'],
-                ['CT-2026-0002', 'Republic v. James Muthomi', 'James Muthomi', 'Criminal', 'Active', 'USR-003', 'Magistrates Court - Kibera', 'USR-003', 'Drug trafficking allegations'],
-                ['CT-2026-0003', 'In Re: Estate of the Late Mzee Kiptoo', 'Family of Mzee Kiptoo', 'Succession & Inheritance', 'Active', 'USR-004', 'High Court - Eldoret', 'USR-001', 'Contested family estate']
-            ];
-            const fileStmt = db.prepare("INSERT INTO files (fileId, caseName, clientName, practiceArea, status, currentCustodian, courtJurisdiction, assignedAdvocates, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            files.forEach(f => fileStmt.run(f));
-            fileStmt.finalize();
-        }
-    });
+    console.log('Database initialized. Waiting for first signup...');
 }
 
 module.exports = db;

@@ -2280,6 +2280,79 @@ body {
     border-left: 4px solid var(--status-info);
 }
 
+/* Admin Council Styles */
+.admin-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 0.5rem;
+}
+
+.admin-tab-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border-radius: 8px 8px 0 0;
+}
+
+.admin-tab-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-tab-btn.active {
+    color: var(--accent-primary);
+    border-bottom: 2px solid var(--accent-primary);
+    background: rgba(100, 108, 255, 0.1);
+}
+
+.practitioner-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.practitioner-avatar {
+    width: 32px;
+    height: 32px;
+    background: var(--accent-primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.practitioner-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.practitioner-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.practitioner-id {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.btn-danger {
+    color: var(--status-danger) !important;
+}
+
+.btn-danger:hover {
+    background: var(--status-danger-bg) !important;
+}
+
 .toast-icon {
     font-size: 1.3rem;
 }

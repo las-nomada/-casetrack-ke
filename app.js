@@ -39,6 +39,12 @@ class CaseTrackKE {
         const currentUser = CaseTrackAuth.getCurrentUser();
         if (currentUser) {
             WSClient.connect(currentUser.userId);
+
+            // Show admin nav only for firm owners
+            if (currentUser.isFirmOwner === 1) {
+                const adminNav = document.getElementById('adminNavBtn');
+                if (adminNav) adminNav.style.display = 'flex';
+            }
         }
 
         this.updateUserInfo();
@@ -176,6 +182,21 @@ class CaseTrackKE {
             });
         });
 
+        // Admin Tabs
+        document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                const view = btn.dataset.adminView;
+                document.querySelectorAll('.admin-view').forEach(v => v.style.display = 'none');
+                document.getElementById(`admin-${view}-view`).style.display = 'block';
+
+                if (view === 'team') this.loadAdminTeamTable();
+                if (view === 'files') this.loadAdminFilesTable();
+            });
+        });
+
         // Close notifications panel on outside click
         document.addEventListener('click', (e) => {
             if (this.notificationsPanelOpen &&
@@ -277,6 +298,9 @@ class CaseTrackKE {
                 break;
             case 'deadlines':
                 this.loadDeadlinesView();
+                break;
+            case 'admin':
+                this.loadAdminSection();
                 break;
             case 'reports':
                 this.loadReportsView();
@@ -1328,6 +1352,122 @@ class CaseTrackKE {
     // ==========================================
     // UTILITIES
     // ==========================================
+
+    // ==========================================
+    // ADMIN COUNCIL
+    // ==========================================
+
+    async loadAdminSection() {
+        const currentUser = CaseTrackAuth.getCurrentUser();
+        if (!currentUser || currentUser.isFirmOwner !== 1) {
+            this.showNotification('Restricted: Admin Council access only.', 'error');
+            this.switchView('dashboard');
+            return;
+        }
+
+        // Default to team view
+        this.loadAdminTeamTable();
+    }
+
+    async loadAdminTeamTable() {
+        try {
+            const users = await APIClient.request('/api/users');
+            const tbody = document.getElementById('adminTeamTable');
+            if (!tbody) return;
+
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td>
+                        <div class="practitioner-info">
+                            <div class="practitioner-avatar">${user.name.charAt(0)}</div>
+                            <div class="practitioner-details">
+                                <span class="practitioner-name">${user.name}</span>
+                                <span class="practitioner-id">${user.userId}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${user.role}</td>
+                    <td>${user.department}</td>
+                    <td><span class="badge badge-success">Active</span></td>
+                    <td>
+                        <button class="btn-icon btn-danger" onclick="caseTrack.handleRemovePractitioner('${user.userId}', '${user.name}')" title="Remove from Firm">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/></svg>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            this.showNotification('Failed to load team list.', 'error');
+        }
+    }
+
+    async handleRemovePractitioner(userId, name) {
+        if (!confirm(`Are you sure you want to remove ${name} from the Law Firm? This action is permanent.`)) return;
+
+        try {
+            const response = await fetch(`/api/users/${userId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('casetrack_token')}` }
+            });
+
+            if (response.ok) {
+                this.showNotification(`${name} has been removed from the firm.`);
+                this.loadAdminTeamTable();
+            } else {
+                const data = await response.json();
+                this.showNotification(data.error || 'Failed to remove practitioner.', 'error');
+            }
+        } catch (err) {
+            this.showNotification('Connection error.', 'error');
+        }
+    }
+
+    async loadAdminFilesTable() {
+        try {
+            const files = await CaseTrackDB.getFiles();
+            const tbody = document.getElementById('adminFilesTable');
+            if (!tbody) return;
+
+            tbody.innerHTML = files.map(file => `
+                <tr>
+                    <td><strong>${file.fileId}</strong></td>
+                    <td>${file.caseName}</td>
+                    <td>${file.practiceArea}</td>
+                    <td><span class="badge badge-${file.status === 'Active' ? 'info' : 'success'}">${file.status}</span></td>
+                    <td>
+                        <button class="btn-icon btn-danger" onclick="caseTrack.handleDeleteFile('${file.fileId}')" title="Dispose Case File">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/></svg>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            this.showNotification('Failed to load files for disposal.', 'error');
+        }
+    }
+
+    async handleDeleteFile(fileId) {
+        if (!confirm(`CAUTION: Are you sure you want to dispose of File ${fileId}? All movements and deadlines for this case will be permanently deleted.`)) return;
+
+        try {
+            const response = await fetch(`/api/files/${fileId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('casetrack_token')}` }
+            });
+
+            if (response.ok) {
+                this.showNotification(`Case file ${fileId} has been disposed.`);
+                await CaseTrackDB.syncWithBackend();
+                this.loadAdminFilesTable();
+                this.updateQuickStats();
+            } else {
+                const data = await response.json();
+                this.showNotification(data.error || 'Failed to delete case file.', 'error');
+            }
+        } catch (err) {
+            this.showNotification('Connection error.', 'error');
+        }
+    }
 
     truncate(str, length) {
         if (!str) return '';

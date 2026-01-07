@@ -186,7 +186,7 @@ app.post('/api/auth/login', (req, res) => {
 
         // Generate final token
         const token = jwt.sign(
-            { userId: user.userId, role: user.role, name: user.name },
+            { userId: user.userId, role: user.role, name: user.name, isFirmOwner: user.isFirmOwner },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
@@ -206,6 +206,7 @@ app.post('/api/auth/login', (req, res) => {
                 userId: user.userId,
                 name: user.name,
                 role: user.role,
+                isFirmOwner: user.isFirmOwner,
                 email: user.email,
                 department: user.department
             }
@@ -233,31 +234,21 @@ app.post('/api/auth/2fa/login', (req, res) => {
                 return res.status(401).json({ error: 'Invalid 2FA code' });
             }
 
-            // Generate final token
-            const token = jwt.sign(
-                { userId: user.userId, role: user.role, name: user.name },
+            // Verify role/ownership
+            const finalToken = jwt.sign(
+                { userId: user.userId, role: user.role, name: user.name, isFirmOwner: user.isFirmOwner },
                 JWT_SECRET,
                 { expiresIn: '24h' }
             );
 
-            res.cookie('token', token, {
+            res.cookie('token', finalToken, {
                 httpOnly: false,
                 secure: process.env.NODE_ENV === 'production',
                 maxAge: 24 * 60 * 60 * 1000,
                 sameSite: 'Strict'
             });
 
-            res.json({
-                success: true,
-                token,
-                user: {
-                    userId: user.userId,
-                    name: user.name,
-                    role: user.role,
-                    email: user.email,
-                    department: user.department
-                }
-            });
+            res.json({ success: true, token: finalToken, user: { userId: user.userId, name: user.name, role: user.role, isFirmOwner: user.isFirmOwner, email: user.email, department: user.department } });
         });
     } catch (err) {
         return res.status(401).json({ error: 'Session expired or invalid' });
@@ -343,6 +334,25 @@ app.post('/api/users', (req, res) => {
     });
 });
 
+// Remove User (Admin Only)
+app.delete('/api/users/:targetUserId', (req, res) => {
+    if (!req.user || req.user.isFirmOwner !== 1) {
+        return res.status(403).json({ error: 'Permission denied. Only Firm Owners can remove advocates.' });
+    }
+
+    const { targetUserId } = req.params;
+
+    // Check if trying to delete yourself
+    if (req.user.userId === targetUserId) {
+        return res.status(400).json({ error: 'You cannot remove yourself.' });
+    }
+
+    db.run("DELETE FROM users WHERE userId = ?", [targetUserId], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, message: 'Practitioner removed from firm.' });
+    });
+});
+
 
 // Files
 app.get('/api/files', (req, res) => {
@@ -351,6 +361,26 @@ app.get('/api/files', (req, res) => {
         res.json(rows);
     });
 });
+
+// Delete File (Admin Only)
+app.delete('/api/files/:fileId', (req, res) => {
+    if (!req.user || req.user.isFirmOwner !== 1) {
+        return res.status(403).json({ error: 'Permission denied. Only Firm Owners can delete case files.' });
+    }
+
+    const { fileId } = req.params;
+
+    // Clean up related data first
+    db.serialize(() => {
+        db.run("DELETE FROM movements WHERE fileId = ?", [fileId]);
+        db.run("DELETE FROM deadlines WHERE fileId = ?", [fileId]);
+        db.run("DELETE FROM files WHERE fileId = ?", [fileId], function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, message: 'Case file permanently disposed.' });
+        });
+    });
+});
+
 
 app.post('/api/files', (req, res) => {
     const { fileId, caseName, clientName, practiceArea, currentCustodian, courtJurisdiction, assignedAdvocates, notes } = req.body;

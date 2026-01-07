@@ -15,9 +15,6 @@ const CaseTrackDB = {
         SETTINGS: 'casetrack_settings'
     },
 
-    /**
-     * Synchronize local storage with backend API
-     */
     async syncWithBackend() {
         if (!APIClient.isEnabled) return;
 
@@ -31,11 +28,11 @@ const CaseTrackDB = {
                 APIClient.getUsers()
             ]);
 
+            if (users) this.saveData(this.STORAGE_KEYS.USERS, users);
             if (files) this.saveData(this.STORAGE_KEYS.FILES, files);
             if (movements) this.saveData(this.STORAGE_KEYS.MOVEMENTS, movements);
             if (deadlines) this.saveData(this.STORAGE_KEYS.DEADLINES, deadlines);
             if (alerts) this.saveData(this.STORAGE_KEYS.ALERTS, alerts);
-            if (users) this.saveData(this.STORAGE_KEYS.USERS, users);
 
             console.log('Sync complete.');
             return true;
@@ -357,6 +354,36 @@ const CaseTrackDB = {
 
     getUsersByRole(role) {
         return this.getAllUsers().filter(u => u.role === role);
+    },
+
+    async createUser(userData) {
+        const userId = userData.userId || `USR-${Math.floor(100 + Math.random() * 899)}`;
+        const newUser = {
+            userId,
+            name: userData.name,
+            role: userData.role,
+            email: userData.email || '',
+            department: userData.department || '',
+            active: 1
+        };
+
+        const users = this.getAllUsers();
+        // Check if user already exists
+        if (!users.find(u => u.userId === userId || u.email === newUser.email)) {
+            users.push(newUser);
+            this.saveData(this.STORAGE_KEYS.USERS, users);
+        }
+
+        // Try to sync with backend if possible
+        try {
+            if (APIClient.isEnabled) {
+                await APIClient.registerUser(newUser);
+            }
+        } catch (e) {
+            console.warn('Backend user registration failed (probably already exists):', e.message);
+        }
+
+        return newUser;
     },
 
     FILE_STATUSES: ['Active', 'Dormant', 'Closed'],

@@ -11,10 +11,7 @@ class CaseTrackKE {
         this.notificationsPanelOpen = false;
     }
 
-    /**
-     * Initialize application
-     */
-    init() {
+    async init() {
         // Initialize sample data if needed
         SampleData.init();
 
@@ -23,25 +20,22 @@ class CaseTrackKE {
 
         // Bind login modal before checking session
         this.loginModal = document.getElementById('loginModal');
+        this.bindElements(); // Bind early so we have navigation/modal refs
+
+        // Initial background sync to get users for login screen
+        await CaseTrackDB.syncWithBackend();
 
         // Check for existing session
         if (CaseTrackAuth.init()) {
             this.hideLoginModal();
-            this.setupUI(); // This will be called after login, which is async. No need to await here as init() itself is not async.
+            this.setupUI();
         } else {
             this.showLoginModal();
         }
     }
 
-    /**
-     * Setup UI after login
-     */
     async setupUI() {
-        this.bindElements();
         this.bindEvents();
-
-        // Initial sync with backend
-        await CaseTrackDB.syncWithBackend();
 
         // Connect WebSockets for real-time notifications
         const currentUser = CaseTrackAuth.getCurrentUser();

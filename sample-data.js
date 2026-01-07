@@ -53,7 +53,11 @@ const SampleData = {
         ];
 
         users.forEach(userData => {
-            CaseTrackDB.createUser(userData);
+            try {
+                CaseTrackDB.createUser(userData);
+            } catch (e) {
+                console.warn('Sample data user creation skipped:', e.message);
+            }
         });
     },
 
